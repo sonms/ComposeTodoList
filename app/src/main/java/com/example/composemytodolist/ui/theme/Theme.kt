@@ -44,8 +44,14 @@ fun ComposeMyTodoListTheme(
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val view = LocalView.current
+
+    // Check if we are in Edit mode (Preview mode)
+    val isInEditMode = view.isInEditMode
+
+    // Adjust color scheme selection based on edit mode
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        !isInEditMode && dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
@@ -53,8 +59,8 @@ fun ComposeMyTodoListTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
-    val view = LocalView.current
-    if (!view.isInEditMode) {
+
+    if (!isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
