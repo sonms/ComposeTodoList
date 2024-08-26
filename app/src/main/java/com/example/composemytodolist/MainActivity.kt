@@ -2,6 +2,7 @@ package com.example.composemytodolist
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
@@ -76,7 +77,7 @@ fun MainContent() {
         floatingActionButtonPosition = FabPosition.End,
         floatingActionButton = {
             // 특정 라우트에서는 BottomNavigation을 숨깁니다.
-            if (currentRoute != "edit_todo") {
+            if (currentRoute == MainActivity.BottomNavItem.Home.screenRoute) {
                 FloatingActionButton(
                     onClick = {
                         navController.navigate("edit_todo")
@@ -156,7 +157,13 @@ fun BottomNavigation(navController: NavController) {
 fun NavigationGraph(navController: NavHostController) {
     NavHost(navController = navController, startDestination = MainActivity.BottomNavItem.Home.screenRoute) {
         composable(MainActivity.BottomNavItem.Calendar.screenRoute) {
-            CalendarScreen()
+            CalendarScreen(
+                onSelectedDate = { selectedDate ->
+                    // 선택된 날짜를 처리하는 코드 작성
+                    Log.d("CalendarScreen", "Selected date: $selectedDate")
+                    // 예를 들어, 선택된 날짜를 ViewModel에 저장하거나 다른 화면으로 이동
+                }
+            )
         }
         composable(MainActivity.BottomNavItem.Home.screenRoute) {
             HomeScreen()

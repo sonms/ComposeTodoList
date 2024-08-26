@@ -85,7 +85,7 @@ fun EditTodoScreen(
         OutlinedTextField(
             value = textContent,
             onValueChange = {textContent = it},
-            singleLine = true,
+            singleLine = false,
             textStyle = TextStyle (
                 color = textColor,
                 fontSize = 16.sp,
@@ -103,7 +103,7 @@ fun EditTodoScreen(
                 )
                 navController.navigate(MainActivity.BottomNavItem.Home.screenRoute)
             },
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+            modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 20.dp)
         ) {
             Text("+")
         }
