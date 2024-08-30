@@ -18,11 +18,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,13 +49,18 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.composemytodolist.presentation.home.TodoItem
+import com.example.composemytodolist.presentation.home.todoList
 import com.example.composemytodolist.ui.theme.blue0
 import com.example.composemytodolist.ui.theme.blue2
 import com.example.composemytodolist.ui.theme.blue3
+import com.example.composemytodolist.viewmodel.MainTodoViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
 import java.time.YearMonth
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -59,8 +68,14 @@ import java.time.YearMonth
 fun CalendarScreen(
     modifier: Modifier = Modifier,
     currentDate: LocalDate = LocalDate.now(),
-    onSelectedDate: (LocalDate) -> Unit //LocalDate를 Unit형태로 반환한다
+    onSelectedDate: (LocalDate) -> Unit,//LocalDate를 Unit형태로 반환한다
+    todoViewModel: MainTodoViewModel = hiltViewModel()
 ) {
+    val calendarEvents by todoViewModel.calendarTodoList.observeAsState(emptyList())
+
+    LaunchedEffect(key1 = Unit) {
+        todoViewModel.fetchEventsByDate(LocalDate.now().toString())
+    }
 
     val yearRange: IntRange = IntRange(1970, 2100)
     // 현재 연도와 월에 해당하는 페이지를 나타냅니다.
@@ -102,6 +117,7 @@ fun CalendarScreen(
 
     LaunchedEffect(currentSelectedDate) {
         onSelectedDate(currentSelectedDate)
+        todoViewModel.fetchEventsByDate(currentSelectedDate.toString())
     }
 
     //페이지 유지 변수의 현재 페이지 값이 변경될때 실행됨
@@ -115,7 +131,7 @@ fun CalendarScreen(
 
     //val pageCount = (yearRange.last - yearRange.first) * 12
 
-    Column(modifier = modifier) {
+    Column(modifier = modifier.fillMaxSize()) {
         val headerText = "${currentMonth.year}년 ${currentMonth.monthValue}월"
         CalendarHeader(
             text = headerText
@@ -133,6 +149,24 @@ fun CalendarScreen(
                     selectedDate = currentSelectedDate,
                     onSelectedDate = { date ->
                         currentSelectedDate = date
+                    }
+                )
+            }
+        }
+        LazyColumn {
+            itemsIndexed(
+                items = calendarEvents,
+                key = { _ ,item ->
+                    item.id
+
+                }
+            ) { index, item ->
+                TodoItem(todo = item,
+                    onDelete = { todoViewModel.deleteTodoById(it.id) },
+                    onItemClick = { clickedTodo ->
+                        // Handle the click event here
+                        Log.d("CalendarScreen", "Clicked item: ${clickedTodo.title}")
+
                     }
                 )
             }
@@ -186,7 +220,9 @@ fun CalendarBody(
     val days = (1..lastDay).toList()
 
     Column(
-        modifier = Modifier.fillMaxWidth().height(500.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
     ) {
         CalendarDayOfWeek()
         LazyVerticalGrid(

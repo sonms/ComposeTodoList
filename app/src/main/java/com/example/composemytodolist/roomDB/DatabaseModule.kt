@@ -14,7 +14,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
-@InstallIn(SingletonComponent::class) // This makes the module available at the application level
+@InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -25,7 +25,9 @@ object DatabaseModule {
             context.applicationContext,
             AppDatabase::class.java,
             "todo-database"
-        ).build()
+        )
+            //.fallbackToDestructiveMigration() // 기존 데이터베이스를 삭제하고 새로 생성
+            .build()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

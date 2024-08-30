@@ -1,5 +1,6 @@
 package com.example.composemytodolist
 
+
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
@@ -22,27 +22,30 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.composemytodolist.presentation.EditTodoScreen
 import com.example.composemytodolist.presentation.calendar.CalendarScreen
-import com.example.composemytodolist.presentation.home.FakeHomeScreen
 import com.example.composemytodolist.presentation.home.HomeScreen
 import com.example.composemytodolist.presentation.settings.SettingsScreen
 import com.example.composemytodolist.ui.theme.ComposeMyTodoListTheme
+import com.example.composemytodolist.viewmodel.MainTodoViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import java.time.LocalDate
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -57,9 +60,11 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        //com.example.composemytodolist.deleteDatabase(this)
         setContent {
             ComposeMyTodoListTheme {
-                MainContent() // Include the MainContent directly
+                val todoViewModel: MainTodoViewModel = hiltViewModel()
+                MainContent(todoViewModel) // Include the MainContent directly
             }
         }
     }
@@ -67,9 +72,12 @@ class MainActivity : ComponentActivity() {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun MainContent() {
+fun MainContent(todoViewModel: MainTodoViewModel) {
     val navController = rememberNavController()
-
+    val selectedDate by todoViewModel.selectedDate.observeAsState(LocalDate.now().toString())
+    LaunchedEffect(selectedDate) {
+        Log.e("main", selectedDate)
+    }
     // 현재 라우트를 가져옵니다.
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -86,6 +94,15 @@ fun MainContent() {
                 ) {
                     Icon(Icons.Default.Create, contentDescription = "Delete")
                 }
+            } else if (currentRoute == MainActivity.BottomNavItem.Calendar.screenRoute) {
+                FloatingActionButton(
+                    onClick = {
+                        navController.navigate("edit_todo?type=calendar&selectedDate=${selectedDate.toString()}")
+                    },
+                    modifier = Modifier.padding(end = 10.dp),
+                ) {
+                    Icon(Icons.Default.Create, contentDescription = "Delete")
+                }
             }
         },
         bottomBar = {
@@ -96,7 +113,7 @@ fun MainContent() {
         },
     ) {
         Box(Modifier.padding(it)) {
-            NavigationGraph(navController = navController)
+            NavigationGraph(navController = navController, todoViewModel)
         }
     }
 }
@@ -154,14 +171,14 @@ fun BottomNavigation(navController: NavController) {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun NavigationGraph(navController: NavHostController) {
+fun NavigationGraph(navController: NavHostController , todoViewModel: MainTodoViewModel) {
     NavHost(navController = navController, startDestination = MainActivity.BottomNavItem.Home.screenRoute) {
         composable(MainActivity.BottomNavItem.Calendar.screenRoute) {
             CalendarScreen(
                 onSelectedDate = { selectedDate ->
                     // 선택된 날짜를 처리하는 코드 작성
                     Log.d("CalendarScreen", "Selected date: $selectedDate")
-                    // 예를 들어, 선택된 날짜를 ViewModel에 저장하거나 다른 화면으로 이동
+                    todoViewModel.fetchEventsByDate(selectedDate.toString())
                 }
             )
         }
@@ -171,12 +188,30 @@ fun NavigationGraph(navController: NavHostController) {
         composable(MainActivity.BottomNavItem.Settings.screenRoute) {
             SettingsScreen()
         }
-        composable("edit_todo") {
-            EditTodoScreen(navController)
+        composable(
+            route = "edit_todo?type={type}&selectedDate={selectedDate}", // Added selectedDate to the route
+            arguments = listOf(
+                navArgument("type") { defaultValue = "default" }, // Default value for 'type'
+                navArgument("selectedDate") { defaultValue = LocalDate.now().toString() } // Default value for 'selectedDate'
+            )
+        ) { backStackEntry ->
+
+            // 전달된 인자를 읽어오기
+            val type = backStackEntry.arguments?.getString("type") ?: "default"
+            val selectedDate = backStackEntry.arguments?.getString("selectedDate") ?: LocalDate.now().toString()
+
+            // 'EditTodoScreen'에 매개변수로 'type' 전달
+            EditTodoScreen(navController, type = type, selectedDate = selectedDate)
         }
     }
 }
 
+/*fun deleteDatabase(context: Context) {
+    val database = context.getDatabasePath("todo-database")
+    if (database.exists()) {
+        database.delete()
+    }
+}*/
 /*
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true)

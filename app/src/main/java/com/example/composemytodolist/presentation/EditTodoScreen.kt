@@ -1,6 +1,7 @@
 package com.example.composemytodolist.presentation
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -40,11 +41,14 @@ import com.example.composemytodolist.viewmodel.MainTodoViewModel
 @Composable
 fun EditTodoScreen(
     navController: NavController, // NavController를 매개변수로 추가
+    type : String?,
+    selectedDate : String?,
     todoViewModel: MainTodoViewModel = hiltViewModel()
 ) {
     var textTitle by remember { mutableStateOf("") }
     var textContent by remember { mutableStateOf("") }
     val textColor = MaterialTheme.colorScheme.onSecondary//동적으로 색상변경
+    Log.e("Edit", "$type $selectedDate")
     Column (
         modifier = Modifier.fillMaxWidth().padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally // Center horizontally
@@ -97,11 +101,22 @@ fun EditTodoScreen(
 
         Button(
             onClick = {
-                todoViewModel.addTodo(
-                    title = textTitle,
-                    content = textContent
-                )
-                navController.navigate(MainActivity.BottomNavItem.Home.screenRoute)
+                if (type == "default") {
+                    todoViewModel.addTodo(
+                        title = textTitle,
+                        content = textContent
+                    )
+                    navController.navigate(MainActivity.BottomNavItem.Home.screenRoute)
+                } else {
+                    if (selectedDate != null) {
+                        todoViewModel.addCalendarTodo(
+                            title = textTitle,
+                            content = textContent,
+                            eventDate = selectedDate
+                        )
+                    }
+                    navController.navigate(MainActivity.BottomNavItem.Calendar.screenRoute)
+                }
             },
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 20.dp)
         ) {

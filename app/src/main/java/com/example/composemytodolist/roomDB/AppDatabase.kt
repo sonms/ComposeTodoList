@@ -6,17 +6,15 @@ import androidx.annotation.RequiresApi
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @RequiresApi(Build.VERSION_CODES.O)
-@Database(entities = [TodoEntity::class], version = 1, exportSchema = false)
+@Database(entities = [TodoEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
-    //구체적인 구현을 자식 클래스에서 수행하도록 하기 위함
-    //반드시 서브클래스가 있어야 합니다
-    //예를 들어, 모든 도형(Shape) 클래스는 draw() 메서드를 구현해야 한다고 강제할 수 있습니다.
     abstract fun getTodoDao(): TodoDao
 
     companion object {
-        //글톤을 구현할 때 가장 중요한 조건인 '단 하나의 인스턴스만을 생성' 할 수 있도록 보장하는 것
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -24,12 +22,24 @@ abstract class AppDatabase : RoomDatabase() {
             Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
-                "todo-database"  //데베 이름
-            ).build() //.fallbackToDestructiveMigration() // 옵션 추가: 데이터베이스 버전이 변경되었을 때 파괴적 마이그레이션 수행
+                "todo-database"  // 데이터베이스 이름
+            )
+                //.fallbackToDestructiveMigration() // 마이그레이션 추가
+                .build()
 
         fun getInstance(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: buildDatabase(context).also { INSTANCE = it }
             }
+
+        // 데이터베이스 버전 1에서 2로의 마이그레이션 정의
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 기존 테이블에 'type' 컬럼 추가
+                db.execSQL("ALTER TABLE TodoDataTable ADD COLUMN type TEXT")
+                // 'eventDate' 컬럼 추가 (기존에는 없었다고 가정)
+                db.execSQL("ALTER TABLE TodoDataTable ADD COLUMN eventDate TEXT")
+            }
+        }
     }
 }
