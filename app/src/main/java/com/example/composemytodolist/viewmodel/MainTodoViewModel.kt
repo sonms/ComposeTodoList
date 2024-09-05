@@ -12,6 +12,7 @@ import com.example.composemytodolist.roomDB.TodoEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.YearMonth
 import javax.inject.Inject
 
 
@@ -28,6 +29,18 @@ class MainTodoViewModel @Inject constructor(
     // _selectedDate가 변경될 때마다 자동으로 업데이트되는 calendarTodoList
     val calendarTodoList: LiveData<List<TodoEntity>> = _selectedDate.switchMap { date ->
         repository.getEventsByDate(date)
+    }
+
+    // 현재 선택된 월의 모든 이벤트를 저장하는 LiveData
+    private val _selectedMonth = MutableLiveData<YearMonth>()
+    @RequiresApi(Build.VERSION_CODES.O)
+    val selectedMonthEvents: LiveData<List<TodoEntity>> = _selectedMonth.switchMap { month ->
+        repository.getEventsByMonth(month.year, month.monthValue)
+    }
+
+    // 선택된 월을 설정하는 함수 (월의 모든 이벤트 가져오기)
+    fun fetchEventsByMonth(yearMonth: YearMonth) {
+        _selectedMonth.value = yearMonth
     }
 
     // 선택된 날짜를 설정하는 함수

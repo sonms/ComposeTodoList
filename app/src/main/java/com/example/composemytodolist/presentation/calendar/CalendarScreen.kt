@@ -52,6 +52,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.composemytodolist.presentation.home.TodoItem
 import com.example.composemytodolist.presentation.home.todoList
+import com.example.composemytodolist.roomDB.TodoEntity
+import com.example.composemytodolist.ui.theme.Purple80
 import com.example.composemytodolist.ui.theme.blue0
 import com.example.composemytodolist.ui.theme.blue2
 import com.example.composemytodolist.ui.theme.blue3
@@ -72,6 +74,8 @@ fun CalendarScreen(
     todoViewModel: MainTodoViewModel = hiltViewModel()
 ) {
     val calendarEvents by todoViewModel.calendarTodoList.observeAsState(emptyList())
+    val calendarMonthEvents by todoViewModel.selectedMonthEvents.observeAsState()
+
 
     LaunchedEffect(key1 = Unit) {
         todoViewModel.fetchEventsByDate(LocalDate.now().toString())
@@ -106,6 +110,9 @@ fun CalendarScreen(
         (yearRange.last - yearRange.first) * 12
     }
 
+    LaunchedEffect(currentMonth) {
+        todoViewModel.fetchEventsByMonth(currentMonth)
+    }
 
     LaunchedEffect(pagerState.currentPage) {
         val addMonth = (pagerState.currentPage - currentPage).toLong()
@@ -124,7 +131,7 @@ fun CalendarScreen(
     /*LaunchedEffect(pagerState.currentPage) {
         //추가될 월
         val addMonth = (pagerState.currentPage - currentPage).toLong()
-        //현재 월 체인지
+        //현재 월 체인지\
         currentMonth = currentMonth.plus(addMonth).toInt()
         currentPage = pagerState.currentPage
     }*/
@@ -149,7 +156,8 @@ fun CalendarScreen(
                     selectedDate = currentSelectedDate,
                     onSelectedDate = { date ->
                         currentSelectedDate = date
-                    }
+                    },
+                    calendarEvents = calendarEvents // 이벤트 데이터를 넘김
                 )
             }
         }
@@ -213,7 +221,8 @@ fun CalendarDayOfWeek( //요일 표시
 fun CalendarBody(
     currentDate: LocalDate,
     selectedDate: LocalDate,
-    onSelectedDate: (LocalDate) -> Unit
+    onSelectedDate: (LocalDate) -> Unit,
+    calendarEvents: List<TodoEntity> // 추가: 이벤트 리스트를 파라미터로 받음
 ) {
     val lastDay = currentDate.lengthOfMonth()
     val firstDayOfWeek = currentDate.withDayOfMonth(1).dayOfWeek.value
@@ -241,17 +250,23 @@ fun CalendarBody(
             items(days) { day ->
                 val date = currentDate.withDayOfMonth(day)
                 val isSelected = selectedDate == date
+                val hasEvent = hasEventForDate(calendarEvents, date) // 날짜에 이벤트가 있는지 확인
                 CalendarDayItem(
                     date = date,
                     isToday = date == LocalDate.now(),
                     isSelected = isSelected,
                     currentDate = currentDate,
                     selectedDate = selectedDate,
-                    onSelectedDate = onSelectedDate
+                    onSelectedDate = onSelectedDate,
+                    hasEvent = hasEvent
                 )
             }
         }
     }
+}
+@RequiresApi(Build.VERSION_CODES.O)
+fun hasEventForDate(events: List<TodoEntity>, date: LocalDate): Boolean {
+    return events.any { it.eventDate == date.toString() } // 날짜에 해당하는 이벤트가 있는지 확인
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -262,7 +277,8 @@ fun CalendarDayItem(
     currentDate: LocalDate,
     selectedDate: LocalDate,
     isSelected: Boolean,
-    onSelectedDate: (LocalDate) -> Unit
+    onSelectedDate: (LocalDate) -> Unit,
+    hasEvent: Boolean // 추가: 이벤트가 있는지 여부를 파라미터로 전달
 ) {
     val backgroundColor = when {
         isToday -> blue3
@@ -276,16 +292,19 @@ fun CalendarDayItem(
         .border(1.dp, Color.Black, shape = RoundedCornerShape(8.dp))
         .size(48.dp)
         .clip(shape = RoundedCornerShape(10.dp))
-        /*.conditional(isToday) {
+        .conditional(isToday) {
             background(blue3)
+        }
+        .conditional(hasEvent) {
+            background(Purple80)
         }
         .conditional(isSelected) {
             background(blue2)
         }
         .conditional(!isToday && !isSelected) {
             background(Color.White)
-        }*/
-        .background(backgroundColor)
+        }
+        //.background(backgroundColor)
         .noRippleClickable { onSelectedDate(date) },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
