@@ -12,7 +12,7 @@ class TodoRepository @Inject constructor(private val todoDao: TodoDao) {
     // 특정 날짜의 이벤트 가져오기
     fun getEventsByDate(date: String): LiveData<List<TodoEntity>> = todoDao.getEventsByDate(date)
 
-    fun getEventsByMonth(year : Int, month : Int) : LiveData<List<TodoEntity>> = todoDao.getEventsByMonth(year, month)
+    fun getEventsByMonth(year : String, month : String) : LiveData<List<TodoEntity>> = todoDao.getEventsByMonth(year, month)
 
     // 할 일 삽입
     suspend fun insertTodo(todo: TodoEntity) {

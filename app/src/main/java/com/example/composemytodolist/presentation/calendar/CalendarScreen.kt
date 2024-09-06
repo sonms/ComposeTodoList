@@ -58,6 +58,7 @@ import com.example.composemytodolist.ui.theme.blue0
 import com.example.composemytodolist.ui.theme.blue2
 import com.example.composemytodolist.ui.theme.blue3
 import com.example.composemytodolist.viewmodel.MainTodoViewModel
+import kotlinx.coroutines.delay
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Month
@@ -74,12 +75,8 @@ fun CalendarScreen(
     todoViewModel: MainTodoViewModel = hiltViewModel()
 ) {
     val calendarEvents by todoViewModel.calendarTodoList.observeAsState(emptyList())
-    val calendarMonthEvents by todoViewModel.selectedMonthEvents.observeAsState()
+    val calendarMonthEvents by todoViewModel.selectedMonthEvents.observeAsState(emptyList())
 
-
-    LaunchedEffect(key1 = Unit) {
-        todoViewModel.fetchEventsByDate(LocalDate.now().toString())
-    }
 
     val yearRange: IntRange = IntRange(1970, 2100)
     // 현재 연도와 월에 해당하는 페이지를 나타냅니다.
@@ -110,15 +107,27 @@ fun CalendarScreen(
         (yearRange.last - yearRange.first) * 12
     }
 
-    LaunchedEffect(currentMonth) {
-        todoViewModel.fetchEventsByMonth(currentMonth)
+    //첫화면 구성 시 사용
+    LaunchedEffect(Unit) {
+        todoViewModel.fetchEventsByDate(LocalDate.now().toString())
+        todoViewModel.fetchEventsByMonth(YearMonth.now())
+        Log.d("calendarMonthEvents", "$calendarMonthEvents 1")
     }
+
+    /*LaunchedEffect(currentMonth) {
+
+        Log.e("calendarMonthEvents", "$calendarMonthEvents 2")
+    }*/
 
     LaunchedEffect(pagerState.currentPage) {
         val addMonth = (pagerState.currentPage - currentPage).toLong()
         currentMonth = currentMonth.plusMonths(addMonth)
         Log.d("launched", currentMonth.toString())
-        Log.d("launched", addMonth.toString())
+
+        todoViewModel.fetchEventsByMonth(currentMonth)
+
+        // Delay to wait for LiveData update, or alternatively you could just rely on `observeAsState`
+        Log.d("calendarMonthEvents", "$calendarMonthEvents")
         currentPage = pagerState.currentPage
     }
 
@@ -157,7 +166,7 @@ fun CalendarScreen(
                     onSelectedDate = { date ->
                         currentSelectedDate = date
                     },
-                    calendarEvents = calendarEvents // 이벤트 데이터를 넘김
+                    calendarEvents = calendarMonthEvents // 이벤트 데이터를 넘김
                 )
             }
         }
@@ -249,6 +258,7 @@ fun CalendarBody(
             }
             items(days) { day ->
                 val date = currentDate.withDayOfMonth(day)
+                //Log.e("date", "$date")
                 val isSelected = selectedDate == date
                 val hasEvent = hasEventForDate(calendarEvents, date) // 날짜에 이벤트가 있는지 확인
                 CalendarDayItem(
@@ -266,7 +276,10 @@ fun CalendarBody(
 }
 @RequiresApi(Build.VERSION_CODES.O)
 fun hasEventForDate(events: List<TodoEntity>, date: LocalDate): Boolean {
-    return events.any { it.eventDate == date.toString() } // 날짜에 해당하는 이벤트가 있는지 확인
+    Log.e("events", "$events")
+    Log.e("events", "$date")
+    Log.e("evnets", "${events.any { it.eventDate == date.toString() }}")
+    return events.any { it.eventDate == date.toString() }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -283,6 +296,7 @@ fun CalendarDayItem(
     val backgroundColor = when {
         isToday -> blue3
         isSelected -> blue2
+        hasEvent -> Color.Yellow
         else -> Color.White
     }
 
@@ -292,18 +306,7 @@ fun CalendarDayItem(
         .border(1.dp, Color.Black, shape = RoundedCornerShape(8.dp))
         .size(48.dp)
         .clip(shape = RoundedCornerShape(10.dp))
-        .conditional(isToday) {
-            background(blue3)
-        }
-        .conditional(hasEvent) {
-            background(Purple80)
-        }
-        .conditional(isSelected) {
-            background(blue2)
-        }
-        .conditional(!isToday && !isSelected) {
-            background(Color.White)
-        }
+        .background(backgroundColor)
         //.background(backgroundColor)
         .noRippleClickable { onSelectedDate(date) },
         horizontalAlignment = Alignment.CenterHorizontally,

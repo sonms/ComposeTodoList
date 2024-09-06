@@ -16,8 +16,8 @@ interface TodoDao {
     @Query("SELECT * FROM TodoDataTable WHERE type = 'calendar' AND eventDate = :date ORDER BY eventDate DESC")
     fun getEventsByDate(date: String): LiveData<List<TodoEntity>> // 특정 날짜의 이벤트 조회
 
-    @Query("SELECT * FROM TodoDataTable WHERE strftime('%Y', eventDate) = :year AND strftime('%m', eventDate) = :month")
-    fun getEventsByMonth(year: Int, month: Int): LiveData<List<TodoEntity>>
+    @Query("SELECT * FROM TodoDataTable WHERE type = 'calendar' AND strftime('%Y', eventDate) = :year AND strftime('%m', eventDate) = :month")
+    fun getEventsByMonth(year: String, month: String): LiveData<List<TodoEntity>>
 
     @Insert
     suspend fun insertTodoList(todoData: TodoEntity) // Room과 ViewModel의 비동기 처리 일관성을 위해 suspend로 변경

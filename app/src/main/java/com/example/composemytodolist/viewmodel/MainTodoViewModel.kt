@@ -35,7 +35,8 @@ class MainTodoViewModel @Inject constructor(
     private val _selectedMonth = MutableLiveData<YearMonth>()
     @RequiresApi(Build.VERSION_CODES.O)
     val selectedMonthEvents: LiveData<List<TodoEntity>> = _selectedMonth.switchMap { month ->
-        repository.getEventsByMonth(month.year, month.monthValue)
+        val formattedMonth = String.format("%02d", month.monthValue) // 월을 두 자리로 포맷
+        repository.getEventsByMonth(month.year.toString(), formattedMonth)
     }
 
     // 선택된 월을 설정하는 함수 (월의 모든 이벤트 가져오기)
