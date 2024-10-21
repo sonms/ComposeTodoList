@@ -9,6 +9,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
+//entity 변경 시 버전 업데이트도 필요함
 @RequiresApi(Build.VERSION_CODES.O)
 @Database(entities = [TodoEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
